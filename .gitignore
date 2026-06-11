@@ -1,0 +1,11 @@
+# private runtime state — NEVER commit (API key lives here)
+state/
+*.log
+
+# local python env
+.venv/
+__pycache__/
+*.pyc
+
+# local Claude Code session config
+.claude/settings.local.json

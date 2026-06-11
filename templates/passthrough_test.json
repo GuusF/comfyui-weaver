@@ -1,0 +1,33 @@
+{
+ "name": "passthrough_test",
+ "description": "Loads an image from input/ and re-saves it to output/claude/. No GPU work — used to verify the integration end-to-end without disturbing anything.",
+ "params": {
+  "image": {
+   "node": "1",
+   "input": "image",
+   "default": null,
+   "description": "Input image as 'subfolder/filename', e.g. 'claude/test.png' (see upload_input)."
+  },
+  "filename_prefix": {
+   "node": "2",
+   "input": "filename_prefix",
+   "default": "passthrough",
+   "description": "Output filename prefix (automatically namespaced under claude/)."
+  }
+ },
+ "workflow": {
+  "1": {
+   "class_type": "LoadImage",
+   "inputs": {
+    "image": "PLACEHOLDER"
+   }
+  },
+  "2": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": ["1", 0],
+    "filename_prefix": "passthrough"
+   }
+  }
+ }
+}

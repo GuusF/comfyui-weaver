@@ -1,0 +1,84 @@
+{
+ "name": "kling_animate_image",
+ "description": "Animate a still image with Kling image-to-video. CLOUD ONLY (run_cloud_workflow) — partner node, consumes Comfy Cloud credits (~EUR 1 per 5s std clip on v2-master). Upload the start frame with cloud_upload_input first.",
+ "params": {
+  "image": {
+   "node": "1",
+   "input": "image",
+   "default": null,
+   "description": "Start-frame image name on the cloud (from cloud_upload_input)."
+  },
+  "prompt": {
+   "node": "2",
+   "input": "prompt",
+   "default": null,
+   "description": "Describe the motion you want, not the scene contents."
+  },
+  "negative_prompt": {
+   "node": "2",
+   "input": "negative_prompt",
+   "default": "blur, warping, morphing, distortion, extra limbs, text, watermark",
+   "description": "What to avoid."
+  },
+  "model_name": {
+   "node": "2",
+   "input": "model_name",
+   "default": "kling-v2-master",
+   "description": "Kling model; cheaper/older: kling-v1-6."
+  },
+  "mode": {
+   "node": "2",
+   "input": "mode",
+   "default": "std",
+   "description": "std or pro (pro costs more)."
+  },
+  "duration": {
+   "node": "2",
+   "input": "duration",
+   "default": "5",
+   "description": "Clip length in seconds: 5 or 10 (string)."
+  },
+  "aspect_ratio": {
+   "node": "2",
+   "input": "aspect_ratio",
+   "default": "1:1",
+   "description": "16:9, 9:16, or 1:1 — match the start frame."
+  },
+  "filename_prefix": {
+   "node": "3",
+   "input": "filename_prefix",
+   "default": "kling_animation",
+   "description": "Output video name prefix (namespaced under claude/)."
+  }
+ },
+ "workflow": {
+  "1": {
+   "class_type": "LoadImage",
+   "inputs": {
+    "image": "PLACEHOLDER"
+   }
+  },
+  "2": {
+   "class_type": "KlingImage2VideoNode",
+   "inputs": {
+    "start_frame": ["1", 0],
+    "prompt": "PLACEHOLDER",
+    "negative_prompt": "blur, warping, morphing, distortion, extra limbs, text, watermark",
+    "model_name": "kling-v2-master",
+    "cfg_scale": 0.8,
+    "mode": "std",
+    "aspect_ratio": "1:1",
+    "duration": "5"
+   }
+  },
+  "3": {
+   "class_type": "SaveVideo",
+   "inputs": {
+    "video": ["2", 0],
+    "filename_prefix": "kling_animation",
+    "format": "auto",
+    "codec": "auto"
+   }
+  }
+ }
+}

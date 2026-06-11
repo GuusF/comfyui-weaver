@@ -1,0 +1,209 @@
+﻿{
+ "name": "flux2_tile_upscale",
+ "description": "CLOUD ONLY tiled upscale/re-detail: lanczos pre-scale, then Flux 2 dev (fp8 mixed) refines tile-by-tile via UltimateSDUpscale (No Upscale). Two LoRA slots: turbo (required for steps<=12) + optional character/style. IDENTITY RECIPE (verified): character LoRA needs its TRIGGER WORD in detail_prompt (e.g. 'your_trigger_word, cinematic close-up...'), strength ~0.9, denoise 0.3-0.35, steps 16 - then tiles reconstruct character-true detail; without the trigger the LoRA smears its prior and degrades the image. Generic upscales: char strength 0, denoise 0.2-0.25. The cloud catalog has no ESRGAN models, hence lanczos+refine. Upload source with cloud_upload_input; run via run_cloud_workflow (credits).",
+ "params": {
+  "image": {
+   "node": "1",
+   "input": "image",
+   "default": null,
+   "description": "Source image name on the cloud (from cloud_upload_input)."
+  },
+  "model": {
+   "node": "3",
+   "input": "unet_name",
+   "default": "flux2_dev_fp8mixed.safetensors",
+   "description": "Flux 2 dev build: flux2_dev_fp8mixed.safetensors (default, faster/cheaper) or flux2-dev.safetensors (full precision, slower per tile). Not Klein."
+  },
+  "scale_by": {
+   "node": "2",
+   "input": "scale_by",
+   "default": 2.0,
+   "description": "Upscale factor (lanczos pre-scale; tiles refine the result)."
+  },
+  "lora_name": {
+   "node": "4",
+   "input": "lora_name",
+   "default": "Flux2TurboComfyv2.safetensors",
+   "description": "Flux 2 LoRA. Turbo (default) allows 8 steps; alternatives: flux2-lenovo_ultrareal.safetensors, flux2-boreal_dev2_boring_reality_for_dev.safetensors, flux2-herbst_photo_analog_film.safetensors."
+  },
+  "lora_strength": {
+   "node": "4",
+   "input": "strength_model",
+   "default": 1.0,
+   "description": "Turbo LoRA strength. Keep at 1.0 whenever steps <= 12 - it is what makes few-step tiles viable."
+  },
+  "character_lora": {
+   "node": "12",
+   "input": "lora_name",
+   "default": "Flux2TurboComfyv2.safetensors",
+   "description": "Optional second LoRA (character/style), chained after turbo."
+  },
+  "character_lora_strength": {
+   "node": "12",
+   "input": "strength_model",
+   "default": 0.0,
+   "description": "0 = off (default). For identity reinforcement during upscale keep <= 0.4; at 1.0 every tile gets re-imprinted with the LoRA subject and real edges dissolve."
+  },
+  "detail_prompt": {
+   "node": "6",
+   "input": "text",
+   "default": "ultra detailed, sharp focus, fine photographic texture, high quality",
+   "description": "What the tiles should reinforce; keep generic unless the image needs steering."
+  },
+  "guidance": {
+   "node": "7",
+   "input": "guidance",
+   "default": 4.0,
+   "description": "Flux guidance for the tile passes."
+  },
+  "seed": {
+   "node": "10",
+   "input": "seed",
+   "default": 42,
+   "description": "Tile sampler seed."
+  },
+  "steps": {
+   "node": "10",
+   "input": "steps",
+   "default": 12,
+   "description": "Steps per tile (12 with the turbo LoRA; ~20 without). USDU only runs the last denoise*steps of them - keep effective steps >= 3."
+  },
+  "seam_fix_mode": {
+   "node": "10",
+   "input": "seam_fix_mode",
+   "default": "Half Tile",
+   "description": "Seam treatment: 'Half Tile' (default, hides tile edges, ~40% more tile passes), 'Band Pass' (cheaper), 'None' (fastest, risks grid lines)."
+  },
+  "denoise": {
+   "node": "10",
+   "input": "denoise",
+   "default": 0.25,
+   "description": "Tile denoise: 0.15 subtle cleanup, 0.25 balanced, 0.35+ re-detail (risks drift)."
+  },
+  "tile_width": {
+   "node": "10",
+   "input": "tile_width",
+   "default": 1024,
+   "description": "Tile width in pixels."
+  },
+  "tile_height": {
+   "node": "10",
+   "input": "tile_height",
+   "default": 1024,
+   "description": "Tile height in pixels."
+  },
+  "filename_prefix": {
+   "node": "11",
+   "input": "filename_prefix",
+   "default": "flux2_tile_upscale",
+   "description": "Output prefix (namespaced under claude/)."
+  }
+ },
+ "workflow": {
+  "1": {
+   "class_type": "LoadImage",
+   "inputs": {
+    "image": "PLACEHOLDER"
+   }
+  },
+  "2": {
+   "class_type": "ImageScaleBy",
+   "inputs": {
+    "image": ["1", 0],
+    "upscale_method": "lanczos",
+    "scale_by": 2.0
+   }
+  },
+  "3": {
+   "class_type": "UNETLoader",
+   "inputs": {
+    "unet_name": "flux2_dev_fp8mixed.safetensors",
+    "weight_dtype": "default"
+   }
+  },
+  "4": {
+   "class_type": "LoraLoaderModelOnly",
+   "inputs": {
+    "model": ["3", 0],
+    "lora_name": "Flux2TurboComfyv2.safetensors",
+    "strength_model": 1.0
+   }
+  },
+  "12": {
+   "class_type": "LoraLoaderModelOnly",
+   "inputs": {
+    "model": ["4", 0],
+    "lora_name": "Flux2TurboComfyv2.safetensors",
+    "strength_model": 0.0
+   }
+  },
+  "5": {
+   "class_type": "CLIPLoader",
+   "inputs": {
+    "clip_name": "mistral_3_small_flux2_fp8.safetensors",
+    "type": "flux2"
+   }
+  },
+  "6": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "text": "ultra detailed, sharp focus, fine photographic texture, high quality",
+    "clip": ["5", 0]
+   }
+  },
+  "7": {
+   "class_type": "FluxGuidance",
+   "inputs": {
+    "conditioning": ["6", 0],
+    "guidance": 4.0
+   }
+  },
+  "8": {
+   "class_type": "ConditioningZeroOut",
+   "inputs": {
+    "conditioning": ["6", 0]
+   }
+  },
+  "9": {
+   "class_type": "VAELoader",
+   "inputs": {
+    "vae_name": "flux2-vae.safetensors"
+   }
+  },
+  "10": {
+   "class_type": "UltimateSDUpscaleNoUpscale",
+   "inputs": {
+    "upscaled_image": ["2", 0],
+    "model": ["12", 0],
+    "positive": ["7", 0],
+    "negative": ["8", 0],
+    "vae": ["9", 0],
+    "seed": 42,
+    "steps": 12,
+    "cfg": 1.0,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 0.25,
+    "mode_type": "Linear",
+    "tile_width": 1024,
+    "tile_height": 1024,
+    "mask_blur": 16,
+    "tile_padding": 48,
+    "seam_fix_mode": "Half Tile",
+    "seam_fix_denoise": 0.3,
+    "seam_fix_width": 64,
+    "seam_fix_mask_blur": 16,
+    "seam_fix_padding": 32,
+    "force_uniform_tiles": true,
+    "tiled_decode": false
+   }
+  },
+  "11": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": ["10", 0],
+    "filename_prefix": "flux2_tile_upscale"
+   }
+  }
+ }
+}

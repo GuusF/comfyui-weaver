@@ -1,0 +1,120 @@
+{
+ "name": "flux_text_to_image",
+ "description": "Flux Schnell text-to-image via GGUF Q4 (fits the 11 GB RTX 2080 Ti). Uses UnetLoaderGGUF (ComfyUI-GGUF pack) + DualCLIPLoader (t5xxl fp8 + clip_l) + ae.safetensors VAE. 4 steps, cfg 1.0. Output goes to output/claude/.",
+ "params": {
+  "prompt": {
+   "node": "3",
+   "input": "text",
+   "default": "studio photo of a tiny robot painting a canvas, soft light, 85mm",
+   "description": "The text prompt."
+  },
+  "unet_name": {
+   "node": "1",
+   "input": "unet_name",
+   "default": "flux1-schnell-Q4_K_S.gguf",
+   "description": "GGUF model filename in models/unet."
+  },
+  "seed": {
+   "node": "6",
+   "input": "seed",
+   "default": 42,
+   "description": "Sampler seed."
+  },
+  "steps": {
+   "node": "6",
+   "input": "steps",
+   "default": 4,
+   "description": "4 for Schnell."
+  },
+  "width": {
+   "node": "5",
+   "input": "width",
+   "default": 1024,
+   "description": "Image width (multiple of 16)."
+  },
+  "height": {
+   "node": "5",
+   "input": "height",
+   "default": 1024,
+   "description": "Image height (multiple of 16)."
+  },
+  "filename_prefix": {
+   "node": "9",
+   "input": "filename_prefix",
+   "default": "flux_test",
+   "description": "Output filename prefix (namespaced under claude/)."
+  }
+ },
+ "workflow": {
+  "1": {
+   "class_type": "UnetLoaderGGUF",
+   "inputs": {
+    "unet_name": "flux1-schnell-Q4_K_S.gguf"
+   }
+  },
+  "2": {
+   "class_type": "DualCLIPLoader",
+   "inputs": {
+    "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
+    "clip_name2": "clip_l.safetensors",
+    "type": "flux"
+   }
+  },
+  "3": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "text": "studio photo of a tiny robot painting a canvas, soft light, 85mm",
+    "clip": ["2", 0]
+   }
+  },
+  "4": {
+   "class_type": "ConditioningZeroOut",
+   "inputs": {
+    "conditioning": ["3", 0]
+   }
+  },
+  "5": {
+   "class_type": "EmptySD3LatentImage",
+   "inputs": {
+    "width": 1024,
+    "height": 1024,
+    "batch_size": 1
+   }
+  },
+  "6": {
+   "class_type": "KSampler",
+   "inputs": {
+    "model": ["1", 0],
+    "positive": ["3", 0],
+    "negative": ["4", 0],
+    "latent_image": ["5", 0],
+    "seed": 42,
+    "steps": 4,
+    "cfg": 1.0,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1.0
+   }
+  },
+  "7": {
+   "class_type": "VAEDecode",
+   "inputs": {
+    "samples": ["6", 0],
+    "vae": ["8", 0]
+   }
+  },
+  "8": {
+   "class_type": "VAELoader",
+   "inputs": {
+    "vae_name": "ae.safetensors"
+   }
+  },
+  "9": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": ["7", 0],
+    "filename_prefix": "flux_test"
+   }
+  }
+ }
+}
