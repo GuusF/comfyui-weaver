@@ -19,11 +19,6 @@ jobs, look at the results (Claude reads the images it generates), run
 parameterized templates on Comfy Cloud, and orchestrate a full
 script→storyboard→video film pipeline on top.
 
-| | |
-|---|---|
-| ![Flux still rendered and verified by Claude](docs/media/demo_flux_robot.png) | ![Film pipeline contact sheet](docs/media/demo_film_contact_sheet.png) |
-| *Demo: a Flux still Claude rendered on Comfy Cloud, then animated via Kling — and visually QC'd itself.* | *Demo: the film pipeline's contact sheet — every shot's state at a glance.* |
-
 ```
 Claude Code ──(stdio MCP)── comfy_mcp_server.py ──┬─(HTTP/WS)── local ComfyUI
                                                   └─(HTTPS)──── cloud.comfy.org
