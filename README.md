@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/media/logo.png" width="220" alt="comfyui-weaver — a thread spool weaving a node graph">
+</p>
+
 # comfyui-weaver 🧵
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
